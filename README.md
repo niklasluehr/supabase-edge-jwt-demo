@@ -10,7 +10,7 @@ Ziel:
 
 ### Sessions Tabelle erstellen und RLS Policies einrichten
 
-Im Supabase SQL Editor den code in `create_game_sessions_table.sql` ausführen.
+Im Supabase SQL Editor den code in `setup/create_game_sessions_table.sql` ausführen.
 
 ### Edge Function
 
