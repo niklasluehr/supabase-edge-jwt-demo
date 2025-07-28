@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Supabase Edge Function JWT Demo
 
-## Getting Started
+Demo Repo
 
-First, run the development server:
+Ziel:
+
+> Eine Supabase-Edge-Function in TypeScript, die ein kurzlebiges HS256-JWT verifiziert, eine Beispiel-Session in eine Tabelle schreibt und per Row-Level-Security ausschließlich für auth.uid() sichtbar macht
+
+## Supabase Setup
+
+### Sessions Tabelle erstellen und RLS Policies einrichten
+
+Im Supabase SQL Editor den code in `create_game_sessions_table.sql` ausführen.
+
+### Edge Function
+
+Der Code der Edge Function befindet sich in `supabase/functions/verify-and-save-session/index.ts`
+
+Edge Function deployen:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx supabase functions deploy verify-and-save-session
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Secrets hochladen (JWT Secret):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx supabase secrets set --env-file supabase/functions/verify-and-save-session/.env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Testen
 
-## Learn More
+Dazu brauchen wir:
 
-To learn more about Next.js, take a look at the following resources:
+- `<project-id>` Supabase Projekt URL
+- `<bearer-token>` Siehe Supabase Dashboard > Edge Functions > verify-and-save-session > Details > Invoke Function (cURL)
+- `<jwt-token>` Einen JWT Token, der mit dem Secret signiert wurde und als sub die Supabase User Id enthält
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+curl -X POST https://<project-id>.supabase.co/functions/v1/verify-and-save-session \
+  -H 'Authorization: Bearer <bearer-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"token": "<jwt_token>", "topic": "Example Topic"}'
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## RLS Funktionsweise
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Beim Erstellen der Session wird als user_id die User ID aus dem JWT Token gesetzt. Außerdem ist auf der game_sessions Tabelle RLS aktiv, sodass nur der User selbst seine Rows lesen kann.
